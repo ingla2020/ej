@@ -19,27 +19,57 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
 
-    @PostMapping(value = "/excel-from-json", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @PostMapping(value = "/excel-from-json", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Resource> generateExcelReportFromJson(@RequestBody String jsonData) {
         try {
-            byte[] reportBytes = reportService.generateReportFromJson(jsonData);
-
+            byte[] reportBytes = reportService.generateExcelReportFromJson(jsonData);
             ByteArrayResource resource = new ByteArrayResource(reportBytes);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_productos.xlsx");
-            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE); // Para XLSX
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_productos.xlsx")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM) // Específico para XLSX
+                    .contentLength(reportBytes.length)
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null); // Devuelve un cuerpo vacío o un mensaje de error JSON
+        }
+    }
+
+    @PostMapping(value = "/pdf-from-json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Resource> generatePdfReportFromJson(@RequestBody String jsonData) {
+        try {
+            byte[] reportBytes = reportService.generatePdfReportFromJson(jsonData);
+            ByteArrayResource resource = new ByteArrayResource(reportBytes);
 
             return ResponseEntity.ok()
-                    .headers(headers)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_productos.pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
                     .contentLength(reportBytes.length)
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
-
         } catch (Exception e) {
-            // Manejo básico de errores, idealmente devolver un ResponseEntity con un error adecuado
-            e.printStackTrace(); // Loguear el error
-            return ResponseEntity.status(500).build();
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PostMapping(value = "/csv-from-json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Resource> generateCsvReportFromJson(@RequestBody String jsonData) {
+        try {
+            byte[] reportBytes = reportService.generateCsvReportFromJson(jsonData);
+            ByteArrayResource resource = new ByteArrayResource(reportBytes);
+
+            // Para CSV, el MediaType "text/csv" es común.
+            MediaType csvMediaType = new MediaType("text", "csv");
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_productos.csv")
+                    .contentType(csvMediaType)
+                    .contentLength(reportBytes.length)
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
         }
     }
 }
